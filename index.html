@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f5f7fb">
+<title>我的课程表</title>
+<style>
+:root{
+  --bg:#f5f7fb;--surface:#fff;--surface2:#f8fafc;--text:#172033;--muted:#7a8496;
+  --line:#e7ebf2;--primary:#246bfd;--primary-soft:#edf4ff;--success:#1ca45b;
+  --success-soft:#ecfbf2;--warning:#ee9b17;--shadow:0 8px 24px rgba(24,39,75,.06)
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC","Microsoft YaHei",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+button{font:inherit}
+.app{width:min(100%,760px);margin:auto;min-height:100vh;padding-bottom:calc(84px + env(safe-area-inset-bottom))}
+.topbar{position:sticky;top:0;z-index:20;padding:calc(12px + env(safe-area-inset-top)) 16px 11px;background:rgba(245,247,251,.94);backdrop-filter:blur(16px);border-bottom:1px solid rgba(231,235,242,.8)}
+.toprow{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.eyebrow{font-size:11px;color:var(--muted);margin-bottom:3px}.title{font-size:23px;font-weight:800;letter-spacing:-.4px}
+.clock{text-align:right;font-variant-numeric:tabular-nums}.clock-time{font-size:17px;font-weight:800}.clock-date{font-size:11px;color:var(--muted);margin-top:2px}
+.content{padding:14px}
+.hero{border-radius:22px;padding:18px;color:#fff;background:linear-gradient(145deg,#246bfd,#5b8fff);box-shadow:0 12px 28px rgba(36,107,253,.22)}
+.hero-label{font-size:12px;opacity:.88}.hero-course{font-size:22px;font-weight:800;line-height:1.35;margin-top:6px}
+.hero-meta{display:flex;flex-wrap:wrap;gap:7px;margin-top:11px}.chip{background:rgba(255,255,255,.17);border:1px solid rgba(255,255,255,.18);padding:6px 9px;border-radius:999px;font-size:11px}
+.hero-bottom{display:flex;justify-content:space-between;align-items:flex-end;gap:8px;margin-top:17px}.hero-sub{font-size:11px;opacity:.84}.hero-status{font-size:12px;font-weight:800;background:#fff;color:#246bfd;border-radius:999px;padding:7px 10px}
+.section-head{display:flex;justify-content:space-between;align-items:center;margin:20px 2px 10px}.section-title{font-size:17px;font-weight:800}.badge{color:#246bfd;background:var(--primary-soft);padding:6px 9px;border-radius:999px;font-size:12px;font-weight:800}
+
+.nav-week{display:flex;gap:8px;align-items:center;margin-bottom:10px}
+.week-switch{border:1px solid var(--line);background:var(--surface);border-radius:12px;height:38px;padding:0 12px;box-shadow:0 3px 12px rgba(24,39,75,.04);cursor:pointer;font-size:13px;font-weight:800;color:var(--text)}
+.week-switch:active{transform:scale(.98)}
+.week-switch.primary{background:var(--primary);border-color:var(--primary);color:#fff;min-width:74px}
+.week-label{flex:1;text-align:center;font-size:14px;font-weight:800}.week-label small{display:block;color:var(--muted);font-size:10px;margin-top:2px;font-weight:600}
+
+.days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:clamp(2px,1.5vw,6px);width:100%}
+.day-btn{border:0;background:transparent;border-radius:14px;padding:8px 1px 9px;color:var(--muted);cursor:pointer;min-width:0}
+.day-btn .dow{font-size:11px;font-weight:700}.day-btn .num{width:32px;height:32px;border-radius:50%;margin:5px auto 0;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:var(--text)}
+.day-btn .dot{width:4px;height:4px;border-radius:50%;background:var(--primary);margin:5px auto 0;opacity:0}.day-btn.has .dot{opacity:1}
+.day-btn.active{background:var(--primary-soft);color:var(--primary)}.day-btn.active .num{background:var(--primary);color:#fff}
+.day-btn.today:not(.active) .num{box-shadow:inset 0 0 0 2px var(--primary);color:var(--primary)}
+
+.toolbar{display:flex;gap:8px;margin:14px 0 4px}.toolbar button{border:1px solid var(--line);background:#fff;border-radius:11px;padding:8px 10px;font-size:12px;color:var(--muted);cursor:pointer}.toolbar button.active{color:var(--primary);background:var(--primary-soft);border-color:#cfe0ff}
+
+.course-list{display:grid;gap:10px}
+.course{display:grid;grid-template-columns:60px 1fr;gap:10px}.time-col{display:flex;flex-direction:column;align-items:center;padding-top:9px}.time-col .p{font-size:10px;color:var(--muted);font-weight:800;white-space:nowrap}.time-col .line{width:2px;flex:1;min-height:14px;background:#e5eaf2;margin-top:8px;border-radius:99px}
+.card{background:#fff;border:1px solid var(--line);border-radius:17px;padding:14px;box-shadow:var(--shadow)}.course.current .card{border-color:#bfe9cf;background:linear-gradient(180deg,#f7fffa,#fff)}
+.card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:7px}.course-name{font-size:16px;font-weight:800;line-height:1.4}.state{font-size:10px;font-weight:800;padding:5px 7px;border-radius:999px;background:#f2f4f7;color:#8791a2;white-space:nowrap}.state.live{color:var(--success);background:var(--success-soft)}.state.next{color:var(--warning);background:#fff7e8}
+.meta{display:flex;flex-wrap:wrap;gap:7px;margin-top:9px}.meta span{font-size:11px;color:var(--muted);background:var(--surface2);border-radius:8px;padding:5px 7px}.range{font-size:11px;color:var(--muted);margin-top:9px}
+.empty{background:#fff;border:1px dashed #d7dde7;border-radius:18px;padding:34px 18px;text-align:center;color:var(--muted);box-shadow:var(--shadow)}.empty-icon{font-size:28px;margin-bottom:8px}.empty strong{display:block;color:var(--text);font-size:16px;margin-bottom:4px}
+.bottom{position:fixed;left:50%;bottom:0;transform:translateX(-50%);z-index:30;width:min(100%,760px);padding:8px 14px calc(8px + env(safe-area-inset-bottom));background:rgba(255,255,255,.95);backdrop-filter:blur(15px);border-top:1px solid var(--line)}
+.bottom-inner{max-width:440px;margin:auto;display:grid;grid-template-columns:1fr 1fr;gap:8px}.bottom button{border:0;background:transparent;border-radius:13px;padding:10px;color:var(--muted);font-size:12px;font-weight:800}.bottom button.active{color:var(--primary);background:var(--primary-soft)}
+@media(min-width:761px){.content{padding:18px}.app{box-shadow:0 0 0 1px rgba(231,235,242,.6)}}
+</style>
+</head>
+<body>
+<div class="app">
+<header class="topbar">
+  <div class="toprow">
+    <div><div class="eyebrow">2026 年第 2 学期 · 助学专升本 24 版</div><div class="title">我的课程表</div></div>
+    <div class="clock"><div class="clock-time" id="clock">--:--:--</div><div class="clock-date" id="todayText">--</div></div>
+  </div>
+</header>
+
+<main class="content">
+<section class="hero">
+  <div class="hero-label" id="heroLabel">正在读取…</div>
+  <div class="hero-course" id="heroCourse">--</div>
+  <div class="hero-meta" id="heroMeta"></div>
+  <div class="hero-bottom"><div class="hero-sub" id="heroSub">--</div><div class="hero-status" id="heroStatus">--</div></div>
+</section>
+
+<div class="section-head"><div class="section-title">课程周历</div><div class="badge" id="weekBadge">第 -- 周</div></div>
+<div class="nav-week">
+  <button class="week-switch" id="prevWeek">‹ 上周</button>
+  <div class="week-label" id="weekLabel">第 -- 周<small id="weekRange">--</small></div>
+  <button class="week-switch" id="nextWeek">下周 ›</button>
+</div>
+<div class="days" id="days"></div>
+
+<div class="toolbar">
+  <button id="todayJump">回到今天</button>
+  <button id="showAll" class="active">显示本周课程</button>
+</div>
+
+<div class="section-head" style="margin-top:12px"><div class="section-title" id="listTitle">--</div><div style="font-size:11px;color:var(--muted)">实时更新</div></div>
+<div class="course-list" id="courseList"></div>
+</main>
+</div>
+
+<nav class="bottom">
+ <div class="bottom-inner">
+  <button id="bottomToday" class="active">今天</button>
+  <button id="bottomWeek">本周</button>
+ </div>
+</nav>
+
+<script>
+// 2026-09-07（周一）是第 2 周的第一天。
+const TERM_START = new Date(2026, 8, 7, 0, 0, 0);
+const TERM_START_WEEK = 2;
+
+const PERIODS = {
+  1: { start: "08:00", end: "08:45" },
+  2: { start: "08:55", end: "09:40" },
+  3: { start: "10:00", end: "10:45" },
+  4: { start: "10:55", end: "11:40" },
+  5: { start: "14:00", end: "14:45" },
+  6: { start: "14:55", end: "15:40" },
+  7: { start: "16:00", end: "16:45" },
+  8: { start: "16:55", end: "17:40" },
+  9: { start: "19:00", end: "19:45" },
+  10: { start: "19:55", end: "20:40" },
+  11: { start: "20:50", end: "21:35" }
+};
+
+const COURSES = [
+  { day: 0, periods: [1, 2, 3, 4], name: "高级计算机网络（一）", teacher: "新 黄超栋", room: "11-203", weeks: [2, 15] },
+  { day: 0, periods: [5, 6], name: "互联网软件应用与开发（含实践）", teacher: "印元军", room: "11-407", weeks: [2, 19] },
+  { day: 0, periods: [7, 8], name: "互联网软件应用与开发（含实践）", teacher: "印元军", room: "11-224", weeks: [2, 19] },
+  { day: 0, periods: [9, 10, 11], name: "网络爬虫与数据分析", teacher: "汤小洋", room: "11-224", weeks: [2, 15] },
+
+  { day: 1, periods: [1, 2], name: "高等数学（工本）", teacher: "王广兰", room: "11-407", weeks: [2, 8] },
+  { day: 1, periods: [3, 4], name: "物联网概论", teacher: "夏志祥", room: "11-405", weeks: [9, 15] },
+  { day: 1, periods: [5, 6], name: "马克思主义基本原理", teacher: "华丽", room: "13号楼102", weeks: [2, 8] },
+  { day: 1, periods: [9, 10], name: "网络爬虫与数据分析", teacher: "汤小洋", room: "11-224", weeks: [2, 12] },
+
+  { day: 2, periods: [1, 2], name: "高等数学（工本）", teacher: "王广兰", room: "11-407", weeks: [6, 8] },
+  { day: 2, periods: [3, 4], name: "数据库系统原理（含实践）", teacher: "洪方", room: "11-407", weeks: [2, 4] },
+  { day: 2, periods: [3, 4], name: "数据库系统原理（含实践）", teacher: "洪方", room: "11-407", weeks: [6, 8] },
+
+  { day: 3, periods: [1, 2], name: "数据结构与算法（含实践）", teacher: "洪方", room: "11-408", weeks: [6, 17] },
+
+  { day: 4, periods: [1, 2], name: "数据结构与算法（含实践）", teacher: "洪方", room: "11-224", weeks: [16, 18] },
+  { day: 4, periods: [3, 4], name: "计算机系统原理", teacher: "谢金国", room: "11-407", weeks: [6, 8] },
+  { day: 4, periods: [5, 6], name: "马克思主义基本原理", teacher: "华丽", room: "13号楼102", weeks: [2, 3] },
+  { day: 4, periods: [7, 8], name: "物联网概论", teacher: "夏志祥", room: "11-404", weeks: [6, 10] }
+];
+
+const DAY_NAMES = ["星期一", "星期二", "星期三", "星期四", "星期五", "星期六", "星期日"];
+
+function startOfDay(date) {
+  const day = new Date(date);
+  day.setHours(0, 0, 0, 0);
+  return day;
+}
+
+function getWeekNumber(date) {
+  const diffDays = Math.floor((startOfDay(date) - TERM_START) / 86400000);
+  return TERM_START_WEEK + Math.floor(diffDays / 7);
+}
+
+function toHHMM(date, text) {
+  const [hour, minute] = text.split(":").map(Number);
+  const result = new Date(date);
+  result.setHours(hour, minute, 0, 0);
+  return result;
+}
+
+function coursesFor(day, week) {
+  return COURSES
+    .filter(course => course.day === day && week >= course.weeks[0] && week <= course.weeks[1])
+    .sort((a, b) => Math.min(...a.periods) - Math.min(...b.periods));
+}
+
+function statusForCourse(course, date, now) {
+  const start = toHHMM(date, PERIODS[Math.min(...course.periods)].start);
+  const end = toHHMM(date, PERIODS[Math.max(...course.periods)].end);
+  if (now >= start && now <= end) return { cls: "live", text: "● 正在上课" };
+  if (now < start) return { cls: "next", text: "下一节" };
+  return { cls: "done", text: "已结束" };
+}
+
+let viewWeek = null;
+let viewDay = null;
+let showWeekCourses = false;
+
+function mondayOfWeek(w){
+  const d = new Date(TERM_START);
+  d.setDate(d.getDate() + (w - TERM_START_WEEK) * 7);
+  return d;
+}
+function fmtMD(d){ return `${d.getMonth()+1}/${d.getDate()}`; }
+function weekRangeText(w){
+  const m = mondayOfWeek(w), s = new Date(m); s.setDate(m.getDate()+6);
+  return `${fmtMD(m)} - ${fmtMD(s)}`;
+}
+function selectedDate(){
+  const m = mondayOfWeek(viewWeek);
+  const d = new Date(m); d.setDate(m.getDate()+viewDay); return d;
+}
+function heroInfo(now){
+  const actualWeek = getWeekNumber(now), actualDay = (now.getDay()+6)%7;
+  const courses = coursesFor(actualDay, actualWeek);
+  for(const c of courses){
+    const d = new Date(now); d.setHours(0,0,0,0);
+    const st = toHHMM(d, PERIODS[Math.min(...c.periods)].start);
+    const en = toHHMM(d, PERIODS[Math.max(...c.periods)].end);
+    if(now>=st && now<=en) return {c,state:"live",mins:Math.max(0,Math.ceil((en-now)/60000))};
+  }
+  for(const c of courses){
+    const d = new Date(now); d.setHours(0,0,0,0);
+    const st = toHHMM(d, PERIODS[Math.min(...c.periods)].start);
+    if(now<st) return {c,state:"next",mins:Math.max(0,Math.ceil((st-now)/60000))};
+  }
+  return null;
+}
+function renderHero(now){
+  const info = heroInfo(now), meta = document.getElementById("heroMeta");
+  meta.innerHTML="";
+  if(info){
+    const c=info.c, p1=Math.min(...c.periods), p2=Math.max(...c.periods);
+    document.getElementById("heroLabel").textContent=info.state==="live"?"正在上课":"下一节课";
+    document.getElementById("heroCourse").textContent=c.name;
+    meta.innerHTML=`<span class="chip">📍 ${c.room}</span><span class="chip">第${p1}-${p2}节</span><span class="chip">👨‍🏫 ${c.teacher}</span>`;
+    document.getElementById("heroSub").textContent=info.state==="live"?`预计还有 ${info.mins} 分钟`:`${info.mins} 分钟后开始`;
+    document.getElementById("heroStatus").textContent=info.state==="live"?"● 正在上课":"下一节";
+  }else{
+    const w=getWeekNumber(now),di=(now.getDay()+6)%7,cnt=coursesFor(di,w).length;
+    document.getElementById("heroLabel").textContent=cnt?"今天课程已结束":"今天暂无课程";
+    document.getElementById("heroCourse").textContent=cnt?"辛苦了，今天课程结束":"今天没有安排课程";
+    meta.innerHTML=`<span class="chip">第 ${w} 周</span><span class="chip">${DAY_NAMES[di]}</span>`;
+    document.getElementById("heroSub").textContent=cnt?`共 ${cnt} 门课程`:"可以安排自己的时间";
+    document.getElementById("heroStatus").textContent=cnt?"已结束":"空闲";
+  }
+}
+function renderDays(now){
+  const actualWeek=getWeekNumber(now), actualDay=(now.getDay()+6)%7, container=document.getElementById("days");
+  container.innerHTML="";
+  for(let i=0;i<7;i++){
+    const d=mondayOfWeek(viewWeek); d.setDate(d.getDate()+i);
+    const count=coursesFor(i,viewWeek).length;
+    const b=document.createElement("button"); b.className="day-btn";
+    if(viewWeek===actualWeek && i===actualDay)b.classList.add("today");
+    if(i===viewDay)b.classList.add("active");
+    if(count)b.classList.add("has");
+    b.innerHTML=`<div class="dow">${DAY_NAMES[i].replace("星期","")}</div><div class="num">${d.getDate()}</div><div class="dot"></div>`;
+    b.onclick=()=>{viewDay=i;showWeekCourses=false;renderAll(new Date())};
+    container.appendChild(b);
+  }
+}
+function renderCourseCard(course, date, now, dayIndex, includeDate){
+  const st=statusForCourse(course,date,now),p1=Math.min(...course.periods),p2=Math.max(...course.periods);
+  const isActualDate = date.toDateString()===now.toDateString();
+  const stateCls = isActualDate ? st.cls : (date > now ? "next" : "done");
+  const stateText = isActualDate ? st.text : (date > now ? "待上课" : "已结束");
+  const dateText = includeDate ? ` · ${DAY_NAMES[dayIndex]} ${date.getMonth()+1}月${date.getDate()}日` : "";
+
+  return `<article class="course ${stateCls==="live"?"current":""}">
+    <div class="time-col"><div class="p">第${p1}${p2!==p1?`-${p2}`:""}节</div><div class="line"></div></div>
+    <div class="card"><div class="card-top"><div class="course-name">${course.name}</div><div class="state ${stateCls}">${stateText}</div></div>
+      <div class="meta"><span>📍 ${course.room}</span><span>👨‍🏫 ${course.teacher}</span></div>
+      <div class="range">${PERIODS[p1].start}–${PERIODS[p2].end} · 第 ${course.weeks[0]}-${course.weeks[1]} 周${dateText}</div>
+    </div>
+  </article>`;
+}
+
+function renderList(now){
+  const list=document.getElementById("courseList");
+  const daysToRender = showWeekCourses ? [...Array(7).keys()] : [viewDay];
+  const entries = daysToRender.flatMap(dayIndex => {
+    const date = new Date(mondayOfWeek(viewWeek));
+    date.setDate(date.getDate()+dayIndex);
+    return coursesFor(dayIndex,viewWeek).map(course => ({course,date,dayIndex}));
+  });
+
+  document.getElementById("listTitle").textContent = showWeekCourses
+    ? `第 ${viewWeek} 周 · 全部课程`
+    : `${DAY_NAMES[viewDay]} · ${selectedDate().getMonth()+1}月${selectedDate().getDate()}日`;
+
+  if(!entries.length){
+    const message = showWeekCourses ? "本周没有安排课程" : "这一天没有课程";
+    const detail = showWeekCourses ? "当前查看周没有符合周次的课程。" : "可以安排复习、项目开发或者休息。";
+    list.innerHTML=`<div class="empty"><div class="empty-icon">☕</div><strong>${message}</strong><div>${detail}</div></div>`;
+    return;
+  }
+
+  list.innerHTML=entries.map(({course,date,dayIndex}) =>
+    renderCourseCard(course,date,now,dayIndex,showWeekCourses)
+  ).join("");
+}
+function renderAll(now){
+  if(viewWeek===null){ viewWeek=getWeekNumber(now); viewDay=(now.getDay()+6)%7; }
+  document.getElementById("clock").textContent=now.toLocaleTimeString("zh-CN",{hour12:false});
+  const di=(now.getDay()+6)%7;
+  document.getElementById("todayText").textContent=`${now.getMonth()+1}月${now.getDate()}日 ${DAY_NAMES[di]}`;
+  document.getElementById("weekBadge").textContent=`第 ${viewWeek} 周`;
+  document.getElementById("weekLabel").innerHTML=`第 ${viewWeek} 周<small>${weekRangeText(viewWeek)} · ${viewWeek===getWeekNumber(now)?"当前周":"预览周"}</small>`;
+  const showAllButton=document.getElementById("showAll");
+  showAllButton.classList.toggle("active",showWeekCourses);
+  showAllButton.textContent=showWeekCourses?"显示当天课程":"显示本周课程";
+  renderHero(now);renderDays(now);renderList(now);
+}
+document.getElementById("prevWeek").onclick=()=>{viewWeek--;viewDay=0;renderAll(new Date())};
+document.getElementById("nextWeek").onclick=()=>{viewWeek++;viewDay=0;renderAll(new Date())};
+document.getElementById("showAll").onclick=()=>{showWeekCourses=!showWeekCourses;renderAll(new Date())};
+document.getElementById("todayJump").onclick=()=>{viewWeek=getWeekNumber(new Date());viewDay=(new Date().getDay()+6)%7;showWeekCourses=false;renderAll(new Date())};
+document.getElementById("bottomToday").onclick=()=>{viewWeek=getWeekNumber(new Date());viewDay=(new Date().getDay()+6)%7;showWeekCourses=false;renderAll(new Date());window.scrollTo({top:0,behavior:"smooth"})};
+document.getElementById("bottomWeek").onclick=()=>{viewWeek=getWeekNumber(new Date());viewDay=0;showWeekCourses=true;renderAll(new Date());document.getElementById("weekLabel").scrollIntoView({behavior:"smooth",block:"center"})};
+
+renderAll(new Date());
+setInterval(()=>renderAll(new Date()),1000);
+</script>
+</body>
+</html>
